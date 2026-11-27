@@ -32,6 +32,10 @@ _Avoid_: sink, target (that word is taken by render targets in gfx)
 An Output a person looks at live: the LCD, and (once proven) HDMI. Only Screens may show the HUD.
 _Avoid_: display (that's the Module's name), monitor
 
+**Fake**:
+A stand-in for an input Module (camera, IMU, mic, NDI receive, keys) that behaves the same way every run, so a Headless run is repeatable.
+_Avoid_: mock, stub, simulator
+
 **Standard keys**:
 The keys every App answers the same way: S snapshot, V record on/off, Q or Esc quit, D the Debug readout. An App may switch any of them off.
 _Avoid_: hotkeys, global keys
@@ -55,7 +59,7 @@ _Avoid_: test mode, offline mode
 - The **HUD** is composed onto **Screens** only. The LCD shows it by default; HDMI shows the clean **Picture** unless the App says otherwise.
 - **Zero Kit** decides which **Outputs** are on and feeds them all; an **App** only asks for them to start or stop.
 - The **App** never draws on a **Screen** directly: it asks for **HUD** items and **Zero Kit** draws them.
-- A **Headless run** replaces the **Screens** with frame files.
+- A **Headless run** replaces the **Screens** with frame files and every input with its **Fake**, and always gives the same Pictures.
 
 ## Flagged ambiguities
 
