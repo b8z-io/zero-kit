@@ -2,6 +2,8 @@
 
 The shared base for the Zero apps on the M5Stack CardputerZero: everything an app needs that isn't its own idea.
 
+This glossary is the shared kernel of the Zero family. Every App's own `CONTEXT.md` uses these terms as defined here and adds only the words for its own idea; a term every App would share is changed here, not in an App.
+
 ## Language
 
 **App**:

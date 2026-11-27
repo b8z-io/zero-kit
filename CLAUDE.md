@@ -2,7 +2,7 @@
 
 The shared C library behind the Zero apps for the M5Stack CardputerZero.
 
-**Where to start:** Run `/grill-with-docs` on the zero-kit design (the open questions above), then `/to-spec` and `/to-tickets`.
+**Where to start:** The design is settled (`CONTEXT.md`, `docs/adr/`). Next: `/to-spec`, then `/to-tickets`.
 
 ## This repo: zero-kit
 
@@ -21,11 +21,20 @@ What belongs here (each a small module with a narrow interface):
 - **capture**: PNG snapshots, MP4 recording, UDP stream.
 - **ndi**: NDI send (from wake-zero) and **receive** (new, for ndi-zero), loaded at run time.
 - **app**: the main loop shape every app shares (frame pacing, headless `--out` mode, flash messages, settings in
-  `~/.config`), and **packaging**: install.sh / install-ndi.sh / deploy, .desktop and icon conventions, a CI
-  workflow the apps copy.
+  `~/.config`), and **packaging**: install.sh / install-ndi.sh / deploy, .desktop and icon conventions, a
+  reusable CI workflow the apps call (ADR 0005).
+- **testpattern**: still and moving test patterns at any size and Format (for ndi-zero's sender, the NDI receive
+  Fake and the HDMI spike).
 
-Open questions for `/grill-with-docs`: how apps consume it (git submodule vs. vendored copy vs. a .deb); one
-static library or source files compiled in; what the app loop owns vs. the app; how HDMI and the LCD share a frame.
+The design questions are answered in `docs/adr/0001`–`0007`. HDMI waits on a device spike before its API is designed.
+
+## Shared language across the Zero family
+
+zero-kit's `CONTEXT.md` is the **shared kernel** for every Zero app. Each app is designed with the same
+`/grill-with-docs` process and gets its own `CONTEXT.md` and `docs/adr/` for its own idea, but it **uses
+zero-kit's terms as defined** (Picture, HUD, Output, Screen, Fake, Format, ...) and must not redefine them. An app
+reads them from its submodule at `zero-kit/CONTEXT.md` and `zero-kit/docs/adr/`. If an app's grilling needs to
+change or add a term that every app would share, that change is made **here**, in zero-kit, not in the app.
 
 ## The Zero family
 
