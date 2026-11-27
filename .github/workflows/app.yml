@@ -1,0 +1,119 @@
+# zero-kit's reusable workflow for a Zero app (ADR 0005). An App's whole CI is a few lines:
+#
+#   name: ci
+#   on: { push: {}, pull_request: {}, workflow_dispatch: {} }
+#   permissions: { contents: write }
+#   concurrency: { group: "ci-${{ github.ref }}", cancel-in-progress: true }
+#   jobs:
+#     app:
+#       uses: b8z-io/zero-kit/.github/workflows/app.yml@v0.1     # the same tag as the zero-kit submodule
+#       with: { app: myapp, title: "My App" }
+#
+# It checks out with submodules, runs the App's headless checks on x86, builds for arm64 in Debian trixie under
+# qemu, checks the release installs there, and on main publishes the "latest" release: <app>.tar.gz holding the
+# binary, the App's package/ folder (app.conf and icons) and zero-kit's install.sh.
+name: app
+on:
+  workflow_call:
+    inputs:
+      app:
+        description: The App's binary name (also the tarball's name)
+        type: string
+        required: true
+      title:
+        description: The App's name for the release title
+        type: string
+        required: true
+      dir:
+        description: Where the App's Makefile and package/ folder are
+        type: string
+        default: "."
+      kit:
+        description: Where zero-kit is checked out (the submodule)
+        type: string
+        default: zero-kit
+      apt:
+        description: Extra Debian/Ubuntu packages needed to build (e.g. libegl-dev libgles-dev libgbm-dev)
+        type: string
+        default: ""
+      test:
+        description: The headless checks, run from the repository root on x86
+        type: string
+        default: make test
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    env:
+      APP: ${{ inputs.app }}
+      DIR: ${{ inputs.dir }}
+      KIT: ${{ inputs.kit }}
+      APT: ${{ inputs.apt }}
+    steps:
+      - uses: actions/checkout@v7
+        with: { submodules: recursive }
+
+      - name: Headless checks (x86)
+        env:
+          TEST: ${{ inputs.test }}
+        run: |
+          if [ -n "$APT" ]; then sudo apt-get update -q && sudo apt-get install -y -q $APT; fi
+          sh -c "$TEST"
+
+      - name: Keep the test output if it failed
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-output
+          path: test/
+          if-no-files-found: ignore
+
+      - uses: docker/setup-qemu-action@v4
+        with: { platforms: arm64 }
+
+      - name: Build for arm64 on Debian trixie, then package
+        run: |
+          make -C "$DIR" clean
+          docker run --rm --platform linux/arm64 -v "$PWD:/w" -w /w -e DIR -e APP -e APT debian:trixie sh -ec '
+            apt-get update -q
+            apt-get install -y -q --no-install-recommends gcc make libc6-dev $APT
+            make -C "$DIR" CFLAGS="-O2 -mcpu=cortex-a53 -Wall"
+            file_type=$(od -An -tx1 -j18 -N2 "$DIR/$APP" | tr -d " ")
+            [ "$file_type" = b700 ] || { echo "$APP is not an arm64 binary"; exit 1; }'
+          mkdir -p "dist/$APP"
+          cp "$DIR/$APP" "$KIT/package/install.sh" "$DIR"/package/* "dist/$APP/"
+          tar -czf "dist/$APP.tar.gz" -C "dist/$APP" .
+          echo "Built from ${GITHUB_SHA::7}. Install on the device: see the README." > dist/NOTES.md
+
+      - name: Check the release installs and runs on arm64 Debian trixie
+        run: |
+          docker run --rm --platform linux/arm64 -v "$PWD/dist:/d:ro" -e APP debian:trixie sh -ec '
+            useradd -m pi
+            mkdir /tmp/$APP && tar -xzf /d/$APP.tar.gz -C /tmp/$APP
+            /tmp/$APP/install.sh
+            test -x /usr/share/APPLaunch/bin/$APP
+            test -f /usr/share/APPLaunch/applications/$APP.desktop
+            test -f /usr/share/APPLaunch/share/images/${APP}_100.png
+            test -f /usr/share/APPLaunch/share/images/${APP}_80.png
+            cat /usr/share/APPLaunch/applications/$APP.desktop
+            su pi -c "/usr/share/APPLaunch/bin/$APP --out /tmp/frames --frames 3" && ls /tmp/frames
+            /tmp/$APP/install.sh --remove
+            test ! -e /usr/share/APPLaunch/bin/$APP'
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.app }}
+          path: dist/${{ inputs.app }}.tar.gz
+
+      - name: Publish the latest release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: ${{ inputs.title }}
+        run: |
+          gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create latest "dist/$APP.tar.gz" --target "$GITHUB_SHA" \
+            --title "$TITLE (latest build)" --notes-file dist/NOTES.md
