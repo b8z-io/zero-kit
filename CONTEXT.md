@@ -32,6 +32,18 @@ _Avoid_: sink, target (that word is taken by render targets in gfx)
 An Output a person looks at live: the LCD, and (once proven) HDMI. Only Screens may show the HUD.
 _Avoid_: display (that's the Module's name), monitor
 
+**Standard keys**:
+The keys every App answers the same way: S snapshot, V record on/off, Q or Esc quit, D the Debug readout. An App may switch any of them off.
+_Avoid_: hotkeys, global keys
+
+**Debug readout**:
+The HUD line D toggles: frame rate, active Outputs, renderer, battery, plus whatever the App adds.
+_Avoid_: info line, stats
+
+**Settings**:
+The few values an App remembers between runs, kept per App in the person's home directory.
+_Avoid_: config, preferences
+
 **Headless run**:
 Running an App with no device attached, writing Pictures to files instead of a Screen, with fake inputs where it needs them.
 _Avoid_: test mode, offline mode
@@ -41,6 +53,8 @@ _Avoid_: test mode, offline mode
 - An **App** uses a chosen set of **Modules**.
 - Each frame an **App** makes one **Picture**; every enabled **Output** receives it.
 - The **HUD** is composed onto **Screens** only. The LCD shows it by default; HDMI shows the clean **Picture** unless the App says otherwise.
+- **Zero Kit** decides which **Outputs** are on and feeds them all; an **App** only asks for them to start or stop.
+- The **App** never draws on a **Screen** directly: it asks for **HUD** items and **Zero Kit** draws them.
 - A **Headless run** replaces the **Screens** with frame files.
 
 ## Flagged ambiguities
