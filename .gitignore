@@ -1,3 +1,5 @@
 ndi-sdk/
 *.ppm
 /test/
+examples/hello/hello
+__pycache__/
