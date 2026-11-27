@@ -1,6 +1,5 @@
-# Builds the example App (hello) and runs zero-kit's checks headless: frames against the stored expected frames,
-# repeatability, what it links, flags, and running on without a screen. (The arm64 build, release and reusable
-# workflow for Apps come in b8z-io/zero-kit#3.)
+# zero-kit's own CI: the reusable App workflow (app.yml), run on the example App, hello. Its headless checks are
+# zero-kit's checks (tests/run.sh); on main it publishes hello as the "latest" release, for trying on the device.
 name: ci
 on:
   push:
@@ -8,25 +7,18 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
+# One build at a time per branch: overlapping runs would race to replace the "latest" release.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  headless:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Build hello and run the checks
-        run: make test
-
-      - name: Keep the frames that differ
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: frames-that-differ
-          path: test/
-          if-no-files-found: ignore
+  hello:
+    uses: ./.github/workflows/app.yml
+    with:
+      app: hello
+      title: Hello Zero
+      dir: examples/hello
+      kit: .
