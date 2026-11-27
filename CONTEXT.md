@@ -28,6 +28,14 @@ _Avoid_: toast, notification
 Anywhere a Picture goes: a Screen, a headless frame file, a snapshot, a recording, a stream, NDI send.
 _Avoid_: sink, target (that word is taken by render targets in gfx)
 
+**Test pattern**:
+A known image made to check a video chain, drawn at any size: still (bars, grid, ramp) or moving (a marker, a counter). It is the content itself, so a name or clock burned into it is not HUD.
+_Avoid_: test card, test signal, slate
+
+**Format**:
+The size and frame rate a full-size Output is sent at (e.g. 1080p30, 720p60).
+_Avoid_: mode, resolution (on its own)
+
 **Screen**:
 An Output a person looks at live: the LCD, and (once proven) HDMI. Only Screens may show the HUD.
 _Avoid_: display (that's the Module's name), monitor
@@ -56,6 +64,7 @@ _Avoid_: test mode, offline mode
 
 - An **App** uses a chosen set of **Modules**.
 - Each frame an **App** makes one **Picture**; every enabled **Output** receives it.
+- A full-size **Output** (NDI send of a **Test pattern**) may carry something other than the **Picture**, at its own **Format**; the **Screens** then show a 320x170 version as the **Picture**.
 - The **HUD** is composed onto **Screens** only. The LCD shows it by default; HDMI shows the clean **Picture** unless the App says otherwise.
 - **Zero Kit** decides which **Outputs** are on and feeds them all; an **App** only asks for them to start or stop.
 - The **App** never draws on a **Screen** directly: it asks for **HUD** items and **Zero Kit** draws them.
