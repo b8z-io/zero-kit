@@ -1,0 +1,32 @@
+# Builds the example App (hello) and runs zero-kit's checks headless: frames against the stored expected frames,
+# repeatability, what it links, flags, and running on without a screen. (The arm64 build, release and reusable
+# workflow for Apps come in b8z-io/zero-kit#3.)
+name: ci
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  headless:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build hello and run the checks
+        run: make test
+
+      - name: Keep the frames that differ
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frames-that-differ
+          path: test/
+          if-no-files-found: ignore
